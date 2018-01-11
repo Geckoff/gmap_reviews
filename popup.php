@@ -65,7 +65,10 @@
       .infoblock {
         width: 250px;
       }
-      .addressblock {
+      .cluster-infoblock {
+        width: 250px;
+      }
+      .cluster-addressblock {
         margin-bottom: 10px;
         border-bottom: 1px solid #ccc;
       }
@@ -80,7 +83,7 @@
     <div id="map"></div>
     <script>
       'use strict';
-var map, popup, testpopup, Popup, PopupBuilder, MarkerPopupBuilder, storageData, markersObj = {}, markerCluster, openedPopup = false;
+var map, popup, testpopup, Popup, PopupBuilder, MarkerPopupBuilder, ClusterPopupBuilder, storageData, markersObj = {}, markerCluster, openedPopup = false;
 
 storageData = localStorage.data ? JSON.parse(localStorage.data) : {};
 
@@ -159,7 +162,8 @@ function generateClusters() {
   google.maps.event.addListener(markerCluster, 'clusterclick', function(cluster) {
       var latLng = new google.maps.LatLng(cluster.center_.lat(), cluster.center_.lng()); 
       var geodata = cluster.markers_;
-      createPopup('cluster', geodata, latLng);
+      //createPopup('cluster', geodata, latLng);
+      new ClusterPopupBuilder(geodata, latLng).createPopup();
   }); 
 }
 
@@ -200,10 +204,9 @@ function openPopup(event) {
               });                
           });
       })
-      //.then((geodata) => {createPopup('location', geodata, event.latLng);
+      //.then((geodata) => {createPopup('location', geodata, event.latLng)})
       .then((geodata) => {
-            console.log(new MarkerPopupBuilder(geodata, event.latLng));
-            //new MarkerPopupBuilder(geodata, event.latLng).createPopup();
+            new MarkerPopupBuilder(geodata, event.latLng).createPopup();
       })
       .catch((e) => {console.log(e)});
   }
@@ -393,7 +396,7 @@ function definePopupClass() {
 
   /** Called when the popup is removed from the map. */
   Popup.prototype.onRemove = function() {
-    if (this.anchor.parentElement) {
+      if (this.anchor.parentElement) {
       this.anchor.parentElement.removeChild(this.anchor);
     }
   };
@@ -488,15 +491,8 @@ function definePopupClass() {
      * @param {Object} latLng
      */
     PopupBuilder = function(geodata, latLng) {
-        this.setData(geodata, latLng);
-
-        this.getLatLng();
-        this.getHtml();
+        this.setData(geodata, latLng);               
         this.getIsMarker();
-
-        PopupBuilder.prototype.parent(this.latLng, this.elem, this.isMarker);
-
-        this.createPopup();
     }
 
     inherit(PopupBuilder, Popup); 
@@ -504,20 +500,24 @@ function definePopupClass() {
     PopupBuilder.prototype.setData = function(geodata, latLng) {
         this.geodata = geodata;
         this.latLng = latLng;
-        this.elem = document.createElement('div');
+    }
+
+    PopupBuilder.prototype.getHtml = function() {
+        let elem = document.createElement('div'); 
+        let contentWrapper = document.createElement('div'); 
+        elem.innerHTML = '<span class="close" style="color:red; cursor: pointer">X</span>';
+        contentWrapper.classList.add('popup-content-wrapper');
+        elem.appendChild(contentWrapper);
+        this.contentWrapper = contentWrapper;
+        this.elem = elem;
     }
 
     PopupBuilder.prototype.createPopup = function() {
-        var mapPopup = new Popup(
-            this.latLng,
-            this.elem,
-            this.isMarker
-        ); 
-    }
 
-    PopupBuilder.prototype.createPopup = function() {
+        PopupBuilder.prototype.parent.call(this, this.latLng, this.elem, this.isMarker);
+        
         if (openedPopup) {    
-            openedPopup.onRemove();  
+            openedPopup.onRemove();
         } 
         openedPopup = this;
 
@@ -535,15 +535,20 @@ function definePopupClass() {
      * @param {Object} latLng
      */
     MarkerPopupBuilder = function(geodata, latLng) {
+
         this.parent.call(this, geodata, latLng);
         this.getMarkerData();
+        this.getLatLng(); 
+        this.getHtml();
     }
 
     inherit(MarkerPopupBuilder, PopupBuilder); 
 
     MarkerPopupBuilder.prototype.getMarkerData = function() {
         if (storageData.hasOwnProperty(this.geodata[1])) {
-            this.markerData = this.geodata[1];
+            console.log(this.geodata[1]);
+            this.markerData = storageData[this.geodata[1]];
+            console.log(this.markerData );
         } else {
             this.markerData = false;
         }
@@ -560,14 +565,127 @@ function definePopupClass() {
     }
 
     MarkerPopupBuilder.prototype.getHtml = function() {
+        this.parent.prototype.getHtml.call(this);
         let comments = '';
         if (this.markerData) {
+            console.log(this.markerData);
             this.markerData.comments.forEach((comment) => {
                 comments += `<div>${comment}</div>`;     
             });     
         }
-        this.elem.innerHTML = `${this.geodata[0]}<br>${this.geodata[1]}<br><input type="text" data-address="${this.geodata[0]}" data-lat="${this.geodata[2][0]}" data-lng="${this.geodata[2][1]}" data-geodataid="${this.geodata[1]}" class="input-review"><br><div class="reviews-block">${comments}</div><br><button class="save-review">Save</button><span class="close" style="color:red; cursor: pointer">X</span>`;
+        this.contentWrapper.innerHTML = `${this.geodata[0]}<br>${this.geodata[1]}<br><input type="text" data-address="${this.geodata[0]}" data-lat="${this.geodata[2][0]}" data-lng="${this.geodata[2][1]}" data-geodataid="${this.geodata[1]}" class="input-review"><br><div class="reviews-block">${comments}</div><br><button class="save-review">Save</button>`;
     }
+
+    /**
+     * @param {Array} geodata - array of marker objects
+     * @param {Object} latLng
+     */
+    ClusterPopupBuilder = function(geodata, latLng) {
+        this.parent.call(this, geodata, latLng);        
+        this.getHtml();
+        this.setClusterClicks();
+    }
+
+    inherit(ClusterPopupBuilder, PopupBuilder); 
+
+    ClusterPopupBuilder.prototype.getHtml = function() {
+        this.parent.prototype.getHtml.call(this);
+        this.contentWrapper.classList.add('infoblock');
+        this.geodata.forEach((marker) => {
+            let id = marker.customInfo;
+            let dataObj = storageData[id];
+            let addressBlock = document.createElement('div');
+            addressBlock.classList.add('cluster-addressblock');
+            let addressInfo = `<div data-id="${id}" class="cluster-address">${dataObj.address}</div>`;
+            addressBlock.innerHTML = addressInfo;
+
+            let clusteCommentsBlock = document.createElement('div');
+            clusteCommentsBlock.classList.add('cluster-comments-block');
+
+            let clusterComments = '';
+            dataObj.comments.forEach((comment) => {
+                clusterComments += `<div class='single-cluster-comment'>${comment}</div>`;  
+            });
+            clusteCommentsBlock.innerHTML = clusterComments;
+            addressBlock.appendChild(clusteCommentsBlock);
+            this.contentWrapper.appendChild(addressBlock);
+        });
+    }
+
+    ClusterPopupBuilder.prototype.setClusterClicks = function() {
+        this.contentWrapper.addEventListener('click', (e) => {
+            if (e.target.classList.contains('cluster-address')) {
+                var addressId = e.target.dataset.id;
+                var marker = markersObj[addressId];
+                map.setZoom(22);
+                map.panTo(marker.position);
+
+                var storageElem = storageData[addressId];
+                new MarkerPopupBuilder([
+                    storageElem.address,
+                    addressId,
+                    [storageElem.lat, storageElem.lng]
+                ], false).createPopup();
+            }
+        });  
+    }
+
+    ClusterPopupBuilder.prototype.getIsMarker = function() {
+        this.isMarker = false;
+    }
+
+
+
+
+
+
+
+    // var close = `<span class="close" style="color:red; cursor: pointer">X</span>`;
+    //   var dataBlock = document.createElement('div');
+    //   dataBlock.innerHTML = close;
+    //   dataBlock.classList.add('infoblock');
+    //   geodata.forEach((cluster) => {
+    //       var id = cluster.customInfo;
+    //       var dataObj = storageData[id];
+    //       var addressBlock = document.createElement('div');
+    //       addressBlock.classList.add('addressblock');
+    //       var addressInfo = `<div data-id="${id}" class="cluster-address">${dataObj.address}</div>`;
+    //       addressBlock.innerHTML = addressInfo;
+
+    //       var clusteCommentsBlock = document.createElement('div');
+    //       clusteCommentsBlock.classList.add('cluster-comments-block');
+
+    //       var clusterComments = '';
+    //       dataObj.comments.forEach((comment) => {
+    //         clusterComments += `<div class='single-cluster-comment'>${comment}</div>`;  
+    //       });
+    //       clusteCommentsBlock.innerHTML = clusterComments;
+    //       addressBlock.appendChild(clusteCommentsBlock);
+    //       dataBlock.appendChild(addressBlock);
+    //   });
+
+    //   dataBlock.addEventListener('click', (e) => {
+    //     if (e.target.classList.contains('cluster-address')) {
+    //         var addressId = e.target.dataset.id;
+    //         var marker = markersObj[addressId];
+    //         map.setZoom(22);
+    //         map.panTo(marker.position);
+
+    //         var storageElem = storageData[addressId];
+
+    //         createPopup('location', [
+    //           storageElem.address,
+    //           addressId,
+    //           [storageElem.lat, storageElem.lng]
+    //         ]);
+    //     }
+    //   });
+    //   //var testpopup = new Popup(
+    //   testpopup = new Popup(
+    //     latLng,
+    //     dataBlock,
+    //     false
+    //   );
 }
 
 
