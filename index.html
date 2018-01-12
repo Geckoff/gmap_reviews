@@ -85,6 +85,7 @@
       'use strict';
 var map, popup, testpopup, Popup, PopupBuilder, MarkerPopupBuilder, ClusterPopupBuilder, storageData, markersObj = {}, markerCluster, openedPopup = false;
 
+
 storageData = localStorage.data ? JSON.parse(localStorage.data) : {};
 
 
@@ -298,8 +299,8 @@ function placeMarker(location, quantity, id) {
 }
 
 function buildMarkers() {
-  if (localStorage.data) {
-      var markersData = JSON.parse(localStorage.data);
+  if (storageData) {
+      var markersData = storageData;
       for (var marker in markersData) {
         var location = {lat: parseFloat(markersData[marker].lat), lng: parseFloat(markersData[marker].lng)};
         var quantity = markersData[marker].comments.length.toString();
