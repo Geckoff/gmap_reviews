@@ -1,0 +1,32 @@
+{
+  "name": "gmap_reviews",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "start": "webpack-dev-server -d",
+    "test": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Geckoff/gmap_reviews.git"
+  },
+  "author": "Andrei Hetsevich",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Geckoff/gmap_reviews/issues"
+  },
+  "homepage": "https://github.com/Geckoff/gmap_reviews#readme",
+  "dependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "jquery": "^3.2.1",
+    "load-google-maps-api": "^1.0.1",
+    "slick-carousel": "^1.8.1",
+    "webpack": "^3.10.0",
+    "webpack-dev-server": "^2.11.0"
+  }
+}
