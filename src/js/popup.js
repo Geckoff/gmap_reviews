@@ -105,7 +105,7 @@ export default function(google) {
     PopupBuilder.prototype.createPopup = function() {
         this.getHtml();
         this.getIsMarker();
-        ////// ???????????
+        
         PopupBuilder.prototype.parent.call(this, this.latLng, this.elem, this.isMarker);
 
         this.anchor.querySelector('.close').addEventListener('click', (e) => {
@@ -123,7 +123,9 @@ export default function(google) {
 
     /**
      * @param {Array} geodata
-     * @param {Object} markerData
+     * @param {Object} markerData - element of global marker data array
+     * @param {google.maps.LatLng} eventLatLng - google maps latlng obj
+     * @param {google.maps.Map} map - google maps map obj
      */
     let MarkerPopupBuilder = function(geoData, markerData, eventLatLng, map) {
         this.markerData = markerData;
@@ -150,6 +152,8 @@ export default function(google) {
             this.markerData.comments.forEach((comment) => {
                 comments += `<div class="address-comment-block"><div class="address-comment-block-header"><div class="address-comment-block-name">${comment.name}</div><div class="address-comment-block-location-date">${comment.location} - ${comment.date}</div></div><div class="address-comment-block-review">${comment.review}</div></div>`;     
             });     
+        } else {
+            comments = '<span style="color: #ccc">No comments yet...</span>';   
         }
         this.contentWrapper.innerHTML = `<div class="marker-address"><div><i class="fas fa-map-marker-alt"></i>&nbsp;${this.address}</div></div><div class="reviews-block">${comments}</div><div class="review-form"><div class="form-name">Your Review <span class="warning"></span></div><input type="text" class="name" placeholder="Name"><input type="text" class="location" placeholder="Location"><textarea class="review" rows="5" placeholder="Review"></textarea><div class="save-review save-button">Save</div></div>`;
     }
@@ -161,9 +165,9 @@ export default function(google) {
     // click on Save Review button
     MarkerPopupBuilder.prototype.setEvents = function() {
         this.contentWrapper.querySelector('.save-review').addEventListener('click', () => {
-                const review = this.contentWrapper.querySelector('.review').value,
-                      name = this.contentWrapper.querySelector('.name').value,
-                      location = this.contentWrapper.querySelector('.location').value,    
+                const review = escapeHtml(this.contentWrapper.querySelector('.review').value),
+                      name = escapeHtml(this.contentWrapper.querySelector('.name').value),
+                      location = escapeHtml(this.contentWrapper.querySelector('.location').value),    
                       date = getDate(),    
                       geoData = [this.address, this.geoId, this.addresslatLng],
                       commentObj = {name, location, review, date};
@@ -217,14 +221,23 @@ export default function(google) {
                     } 
 
                     return mm + '/' + dd + '/' + yyyy;
-                }       
+                }     
+
+                function escapeHtml(unsafe) {
+                    return unsafe
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                }  
         });      
     }
 
-
     /**
      * @param {Object} geodata - object with marker objects and markers' data
-     * @param {Object} latLng
+     * @param {google.maps.LatLng} eventLatLng - google maps latlng obj
+     * @param {google.maps.Map} map - google maps map obj
      */
     let ClusterPopupBuilder = function(geodata, latLng, map) {
         this.geodata = geodata;      
@@ -239,10 +252,7 @@ export default function(google) {
         this.contentWrapper.classList.add('infoblock');
         for (let geoId in this.geodata) {
             let dataObj = this.geodata[geoId].clusterMarkerInfo,
-                addressInfo = `<div data-id="${geoId}" class="go-to-address cluster-address">${dataObj.address}</div>`;
-
-            
-
+                addressInfo = `<div data-id="${geoId}" class="go-to-address cluster-address">${dataObj.address}</div>`; 
             
             dataObj.comments.forEach((comment) => {
                 let clusteCommentsBlock = document.createElement('div'),

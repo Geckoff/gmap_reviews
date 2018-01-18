@@ -22,22 +22,22 @@ let gMapsApp = function() {
         ov.setMap(this); 
     };
 
-    // extending native ClusterIcon function
+    // extending native ClusterIcon onAdd function
     ClusterIcon.prototype.onAdd = function() {
         this.div_ = document.createElement('DIV');
         if (this.visible_) {
             var pos = this.getPosFromLatLng_(this.center_);
             this.div_.style.cssText = this.createCss(pos);
 
+            // including markers and reviews quantity info to the cluster icon
             var markers = this.cluster_.markers_;
             var reviewsCount = 0;
             markers.forEach((marker) => {
                 var id = marker.customInfo;
-
                 reviewsCount += markersDataFuncs.storageData[id].comments.length;
             });    
 
-            this.div_.innerHTML = this.sums_.text + '/' + reviewsCount;
+            this.div_.innerHTML = `<div class="cluster-icon"><span>${this.sums_.text}</span><span>${reviewsCount}</span></div>`;
         }
 
         var panes = this.getPanes();
@@ -49,6 +49,7 @@ let gMapsApp = function() {
             that.triggerClusterClick();
         });
 
+        // zoom into cluster on doubleclick
         google.maps.event.addDomListener(this.div_, 'dblclick', function(e) {
             e.stopPropagation(); 
             that.map_.fitBounds(that.cluster_.getBounds());
@@ -61,12 +62,14 @@ let gMapsApp = function() {
         });
     };    
     
+    // adding click events to a marker
     const addEventsToMarker = function(marker) { 
         marker.addListener('click', openPopup); 
         generateClusters();
     }
 
-
+    // check if a marker is currently part of a cluster
+    // if it is, zoom into a cluster
     const zoomInToClusterMarker = function(geoId) {
         if (markerCluster !== undefined) {
             let zoomIn = false,
@@ -92,7 +95,7 @@ let gMapsApp = function() {
         }
     }
 
-
+    // open address marker popup
     const openPopup = function(event) {
         let address = '',
             eventLatLng;     
@@ -147,6 +150,7 @@ let gMapsApp = function() {
             .catch((e) => {console.log(e)});
     }
 
+    // generate clusters
     const generateClusters = function() { 
         if (typeof markerCluster === 'object') {
           markerCluster.clearMarkers();
@@ -157,14 +161,40 @@ let gMapsApp = function() {
         }
 
         markerCluster = new MarkerClusterer(map, markersArr, {
-            imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m',
-            zoomOnClick: false
+            //imagePath: '/src/img/cluster',
+            zoomOnClick: false,
+            styles: [{
+                height: 53,
+                url: "/src/img/cluster.svg",
+                width: 53
+                },
+                {
+                height: 53,
+                url: "/src/img/cluster.svg",
+                width: 53
+                },
+                {
+                height: 53,
+                url: "/src/img/cluster.svg",
+                width: 53
+                },
+                {
+                height: 53,
+                url: "/src/img/cluster.svg",
+                width: 53
+                },
+                {
+                height: 53,
+                url: "/src/img/cluster.svg",
+                width: 53
+            }]
         });
 
+        // open cluster popup on click
         google.maps.event.addListener(markerCluster, 'clusterclick', function(cluster) {
             let latLng = new google.maps.LatLng(cluster.center_.lat(), cluster.center_.lng()),
                 geodata = cluster.markers_,
-                clusterMarkersObj = {};   
+                clusterMarkersObj = {};  
 
             cluster.markers_.forEach((clusterMarker) => {
             let clusterMarkerItself = clusterMarker,
@@ -185,13 +215,13 @@ let gMapsApp = function() {
         popup = definePopupClass(google);
 
         map = new google.maps.Map(document.getElementById('map'), {
-            center: {lat: -33.9, lng: 151.1},
-            zoom: 18,
+            center: {lat: 39.7392, lng: -104.9903},
+            zoom: 14,
         });
 
         markersDataFuncs = new MarkersData(map, google);
 
-        // attaching function to event that triggers when save button was hit
+        // attaching function to event that triggers when save button was pressed
         document.addEventListener('markerUpdate', (e) => {
             if (e.detail.addNewLocation) {
                 let zoomIn = false,
@@ -226,6 +256,8 @@ let gMapsApp = function() {
         });
 
         google.maps.event.addListener(map, 'click', openPopup);
+
+        // close all popups on zoomin/zoomout
         map.addListener('zoom_changed', function() {
             if (document.querySelector('.close')) {
                 document.querySelector('.close').click();
