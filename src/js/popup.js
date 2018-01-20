@@ -277,7 +277,7 @@ export default function(google) {
                 let geoId = e.target.dataset.id,
                     marker = this.geodata[geoId].clusterMarkerItself;
 
-                this.map.setZoom(22);
+                this.map.setZoom(21);
                 this.map.panToWithOffset(marker.position, 0, -220);
 
                 let markerData = this.geodata[geoId].clusterMarkerInfo,

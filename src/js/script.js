@@ -1,5 +1,5 @@
-import definePopupClass from './src/js/popup.js';
-import MarkersData from './src/js/markersdata.js';
+import definePopupClass from './popup.js';
+import MarkersData from './markersdata.js';
 
 let gMapsApp = function() {
     let map, 
@@ -87,7 +87,7 @@ let gMapsApp = function() {
             });            
 
             if (zoomIn) {
-                map.setZoom(22);
+                map.setZoom(21);
                 map.panToWithOffset(latLng, 0, -220);
             }
 
